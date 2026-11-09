@@ -6,7 +6,6 @@ chrome.action.onClicked.addListener(tab => {
   chrome.sidePanel.open({ tabId: tab.id }).catch(console.error);
 });
 
-const DEVOPS_ORIGIN = 'https://devops.ageas.pt';
 const API_VERSION = '5.0';
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -21,12 +20,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ ok: false, error: 'No Azure DevOps tab was specified.' });
     return;
   }
+  const serverUrl = typeof message.serverUrl === 'string' ? message.serverUrl.trim() : '';
+  if (!serverUrl) {
+    sendResponse({ ok: false, error: 'No Azure DevOps server was specified.' });
+    return;
+  }
 
   chrome.scripting.executeScript({
     target: { tabId: sourceTabId },
     world: 'MAIN',
     func: loadInventoryFromDevOps,
-    args: [message.serverUrl ?? DEVOPS_ORIGIN, API_VERSION]
+    args: [serverUrl, API_VERSION]
   }).then(results => {
     sendResponse(results[0]?.result || { ok: false, error: 'The Azure DevOps tab returned no data.' });
   }).catch(error => {

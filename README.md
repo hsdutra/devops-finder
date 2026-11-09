@@ -35,6 +35,8 @@ An organization address often looks like `https://dev.azure.com/your-organizatio
 - Your saved site addresses and appearance choice stay in this browser profile.
 - The extension does not send your information to a separate tracking or inventory service.
 
+For full details, see the [Privacy Policy](PRIVACY.md).
+
 ## If you cannot find something
 
 Make sure you are signed in to the right Azure DevOps site and that the correct site is selected in **Settings**. If some projects or repositories are still missing, your account may not have access to them, or Azure DevOps may not have provided all the information yet.

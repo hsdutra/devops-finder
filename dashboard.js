@@ -1,5 +1,6 @@
     (() => {
-      const ADO_SERVER_URL = 'https://devops.ageas.pt';
+      const savedConnection = JSON.parse(localStorage.getItem('devops-connections') || 'null');
+      const serverUrl = savedConnection ? savedConnection.active : localStorage.getItem('devops-server');
       const sourceTabId = Number(new URLSearchParams(window.location.search).get('sourceTabId'));
       const workspace = document.getElementById('workspace');
       const emptyState = document.getElementById('emptyState');
@@ -48,6 +49,10 @@
           showError('Open an Azure DevOps tab and select the DevOps Finder icon to load data.');
           return;
         }
+        if (typeof serverUrl !== 'string' || !serverUrl.trim()) {
+          showError('No Azure DevOps server is selected. Choose a server in DevOps Finder settings first.');
+          return;
+        }
         refreshButton.disabled = true;
         refreshButton.textContent = 'Refreshing…';
         if (!inventory) {
@@ -59,7 +64,7 @@
           if (!globalThis.chrome?.runtime?.sendMessage) {
             throw new Error('Open this dashboard through the DevOps Finder extension.');
           }
-          const result = await chrome.runtime.sendMessage({ type: 'searchdevops:load-inventory', sourceTabId });
+          const result = await chrome.runtime.sendMessage({ type: 'searchdevops:load-inventory', sourceTabId, serverUrl });
           if (!result || !result.ok) {
             const requestError = new Error(result && result.error ? result.error : 'The extension returned no inventory data.');
             if (/\b401\b/.test(requestError.message)) requestError.code = 'unauthorized';
@@ -391,12 +396,15 @@
         if (message) {
           errorBox.append(document.createTextNode(message));
           if (requestLogin) {
-            const link = document.createElement('a');
-            link.href = ADO_SERVER_URL;
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer';
-            link.textContent = 'Sign in to Azure DevOps';
-            errorBox.append(link);
+            const loginUrl = safeUrl(serverUrl);
+            if (loginUrl) {
+              const link = document.createElement('a');
+              link.href = loginUrl;
+              link.target = '_blank';
+              link.rel = 'noopener noreferrer';
+              link.textContent = 'Sign in to Azure DevOps';
+              errorBox.append(link);
+            }
           }
         }
         errorBox.classList.toggle('visible', Boolean(message));

@@ -8,9 +8,6 @@
     "scripting",
     "sidePanel"
   ],
-  "host_permissions": [
-    "https://devops.ageas.pt/*"
-  ],
   "optional_host_permissions": [
     "http://*/*",
     "https://*/*"
