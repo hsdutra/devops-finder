@@ -4,6 +4,8 @@
 
 If your team uses Azure DevOps to organize projects and store code, DevOps Finder helps you quickly find the right project or code repository and open it. A repository is simply a place where a team keeps its code.
 
+![DevOps Finder infographic showing the extension, its main features, how it works, and its privacy approach.](images/infographic.png)
+
 ## What you can do
 
 - Search for a project or code repository by name.
