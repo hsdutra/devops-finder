@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DevOps Finder",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Find and open Git and TFVC repositories in Azure DevOps.",
   "permissions": [
     "activeTab",
