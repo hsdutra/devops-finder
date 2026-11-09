@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DevOps Finder",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Find and open Git and TFVC repositories in Azure DevOps.",
   "permissions": [
     "activeTab",
@@ -10,6 +10,10 @@
   ],
   "host_permissions": [
     "https://devops.ageas.pt/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
   ],
   "background": {
     "service_worker": "service-worker.js"

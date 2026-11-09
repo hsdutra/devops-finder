@@ -1,6 +1,9 @@
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false }).catch(console.error);
+chrome.sidePanel.setOptions({ enabled: false }).catch(console.error);
 chrome.action.onClicked.addListener(tab => {
-  chrome.sidePanel.open({ windowId: tab.windowId }).catch(console.error);
+  chrome.sidePanel.setOptions({ tabId: tab.id, path: 'popup.html', enabled: true })
+    .catch(console.error);
+  chrome.sidePanel.open({ tabId: tab.id }).catch(console.error);
 });
 
 const DEVOPS_ORIGIN = 'https://devops.ageas.pt';
@@ -27,10 +30,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }).then(results => {
     sendResponse(results[0]?.result || { ok: false, error: 'The Azure DevOps tab returned no data.' });
   }).catch(error => {
+    const detail = error instanceof Error ? error.message : '';
     sendResponse({
       ok: false,
-      error: error instanceof Error
-        ? `Could not retrieve data from the active tab. Open DevOps Finder from an Azure DevOps tab. (${error.message})`
+      requiresHostPermission: /cannot access contents|missing host permission|must request permission to access/i.test(detail),
+      error: detail
+        ? `Could not retrieve data from the active tab. Open DevOps Finder from an Azure DevOps tab. (${detail})`
         : 'Could not retrieve data from the active Azure DevOps tab.'
     });
   });

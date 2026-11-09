@@ -11,26 +11,25 @@
   <header>
     <div class="brand"><img class="mark" src="images/devops-finder.svg" alt="" width="28" height="28"> DevOps Finder</div>
     <div class="header-actions">
-      <span id="session" class="session" role="status" data-state="checking" aria-label="Checking session" title="Checking session"></span>
       <button id="theme-toggle" type="button" aria-label="Switch theme">
-        <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 14.1A9 9 0 0 1 9.9 3.2a9 9 0 1 0 10.9 10.9Z"/></svg>
-        <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg>
+        <span class="material-symbols-rounded moon" aria-hidden="true">dark_mode</span>
+        <span class="material-symbols-rounded sun" aria-hidden="true">light_mode</span>
       </button>
       <button id="settings" type="button" aria-label="Settings" title="Settings">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3h4l.6 2.4 2 .9 2.2-1.2 2 3.5-1.8 1.7v2.4l1.8 1.7-2 3.5-2.2-1.2-2 .9L14 20h-4l-.6-2.4-2-.9-2.2 1.2-2-3.5 1.8-1.7v-2.4L3.2 8.6l2-3.5 2.2 1.2 2-.9L10 3Z"/><circle cx="12" cy="11.5" r="3"/></svg>
+        <span class="material-symbols-rounded" aria-hidden="true">settings</span>
       </button>
     </div>
   </header>
   <main>
     <div class="search-field">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 4 4"/></svg>
+      <span class="material-symbols-rounded" aria-hidden="true">search</span>
       <input id="search" type="search" aria-label="Search projects or repositories by name" placeholder="Search projects or repositories…" autocomplete="off" autofocus>
     </div>
-    <button id="advanced" type="button" aria-controls="filters" aria-expanded="false">Advanced search <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg></button>
+    <button id="advanced" type="button" aria-controls="filters" aria-expanded="false">Advanced search <span class="material-symbols-rounded" aria-hidden="true">expand_more</span></button>
     <div id="filters" hidden>
-      <label>Collection<select id="collection"></select></label>
-      <label>Project<select id="project"></select></label>
-      <label>Repository<select id="repository"></select></label>
+      <label>Collection<span class="select-control"><select id="collection"></select><span class="material-symbols-rounded select-chevron" aria-hidden="true">expand_more</span></span></label>
+      <label>Project<span class="select-control"><select id="project"></select><span class="material-symbols-rounded select-chevron" aria-hidden="true">expand_more</span></span></label>
+      <label>Repository<span class="select-control"><select id="repository"></select><span class="material-symbols-rounded select-chevron" aria-hidden="true">expand_more</span></span></label>
     </div>
     <p id="status" role="status">Loading projects and repositories…</p>
     <div id="error" role="alert" hidden></div>
@@ -38,17 +37,33 @@
     <ul id="results" aria-labelledby="results-heading"></ul>
   </main>
   <footer class="status-bar" aria-label="Extension status">
-    <small id="connected-server" class="connected-server" hidden></small>
-    <small id="version" class="status-version"></small>
+    <small id="connected-server" class="connected-server"></small>
+    <small id="session" class="session" role="status" data-state="unconfigured" aria-label="No server selected: Not configured" title="No server selected: Not configured">Not configured</small>
+    <button id="version" class="status-version" type="button" popovertarget="github-popover" aria-haspopup="dialog" title="About DevOps Finder"></button>
   </footer>
+  <div id="github-popover" class="github-popover" popover="auto" role="dialog" aria-labelledby="github-popover-title">
+    <div class="github-popover-heading">
+      <strong id="github-popover-title">Enjoying DevOps Finder?</strong>
+      <button class="settings-close" type="button" popovertarget="github-popover" popovertargetaction="hide" aria-label="Close" title="Close">
+        <span class="material-symbols-rounded" aria-hidden="true">close</span>
+      </button>
+    </div>
+    <p>If it helps your work, please consider giving the project a star.</p>
+    <a href="https://github.com/hsdutra/devops-finder" target="_blank" rel="noopener noreferrer">Star DevOps Finder on GitHub</a>
+  </div>
   <dialog id="settings-dialog" aria-labelledby="settings-title">
     <form id="settings-form">
-      <h2 id="settings-title">Azure DevOps settings</h2>
+      <div class="settings-heading">
+        <h2 id="settings-title">Azure DevOps settings</h2>
+        <button id="settings-close" class="settings-close" type="button" aria-label="Close settings" title="Close settings">
+          <span class="material-symbols-rounded" aria-hidden="true">close</span>
+        </button>
+      </div>
       <div class="connections-toolbar">
-        <span id="connections-label">Saved connections</span>
+        <span id="connections-label">Saved server URLs</span>
         <button id="add-server" type="button">Add URL</button>
       </div>
-      <table class="connections-grid" aria-labelledby="connections-label">
+      <table id="connections-grid" class="connections-grid" aria-labelledby="connections-label">
         <thead><tr><th scope="col">Active</th><th scope="col">URL</th><th scope="col">Actions</th></tr></thead>
         <tbody id="saved-servers"></tbody>
       </table>
@@ -57,7 +72,7 @@
         <input id="server-url" type="url" disabled placeholder="https://dev.azure.com/my-organization">
       </div>
       <p id="settings-error" role="alert" hidden></p>
-      <div class="error-actions">
+      <div id="settings-actions" class="error-actions" hidden>
         <button id="settings-cancel" type="button">Cancel</button>
         <button type="submit">Save</button>
       </div>

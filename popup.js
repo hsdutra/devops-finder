@@ -34,12 +34,15 @@ const errorBox = document.querySelector('#error');
 const defaultServer = 'https://dev.azure.com';
 const savedConnection = JSON.parse(localStorage.getItem('devops-connections') || 'null');
 const server = savedConnection ? savedConnection.active : localStorage.getItem('devops-server') || defaultServer;
-const servers = savedConnection?.urls || (server && server !== defaultServer ? [server] : []);
+let servers = savedConnection?.urls || (server && server !== defaultServer ? [server] : []);
 const connectedServer = document.querySelector('#connected-server');
 const settings = document.querySelector('#settings-dialog');
 const serverInput = document.querySelector('#server-url');
 const settingsError = document.querySelector('#settings-error');
 const savedServers = document.querySelector('#saved-servers');
+const connectionsGrid = document.querySelector('#connections-grid');
+const connectionsLabel = document.querySelector('#connections-label');
+const settingsActions = document.querySelector('#settings-actions');
 const newServer = document.querySelector('#new-server');
 
 const settingsButton = document.querySelector('#settings');
@@ -53,18 +56,25 @@ function renderConnections() {
   if (!draftServers.length) {
     const cell = savedServers.insertRow().insertCell();
     cell.colSpan = 3;
-    cell.textContent = 'No saved connections';
+    cell.textContent = 'No saved server URLs';
     return;
   }
   for (const url of draftServers) {
     const row = savedServers.insertRow();
-    const radio = document.createElement('input');
-    radio.type = 'radio';
-    radio.name = 'active-server';
-    radio.checked = url === selectedServer;
-    radio.setAttribute('aria-label', 'Select ' + url);
-    radio.addEventListener('change', () => { selectedServer = url; });
-    row.insertCell().append(radio);
+    const active = url === selectedServer;
+    const activeButton = document.createElement('button');
+    activeButton.type = 'button';
+    activeButton.className = 'active-connection';
+    activeButton.setAttribute('aria-pressed', String(active));
+    activeButton.setAttribute('aria-label', (active ? 'Active server URL: ' : 'Set active server URL: ') + url);
+    activeButton.title = active ? 'Active server URL' : 'Set as active server URL';
+    activeButton.append(materialSymbol(active ? 'check_box' : 'check_box_outline_blank'));
+    activeButton.addEventListener('click', () => {
+      if (active || !url) return;
+      selectedServer = url;
+      saveConnections(url, draftServers);
+    });
+    row.insertCell().append(activeButton);
     row.insertCell().textContent = url;
 
     const actions = document.createElement('div');
@@ -72,21 +82,39 @@ function renderConnections() {
     actions.append(
       connectionAction('Edit', url, () => setConnectionEditor('edit', url)),
       connectionAction('Remove', url, () => {
+        if (!window.confirm('Remove this server URL?\n\n' + url)) return;
+        const wasActive = selectedServer === url;
         draftServers = draftServers.filter(address => address !== url);
-        if (selectedServer === url) selectedServer = draftServers[0] || null;
-        if (editingServer === url) setConnectionEditor(null);
-        renderConnections();
+        if (wasActive) selectedServer = draftServers[0] || null;
+        saveConnections(selectedServer, draftServers, wasActive);
+        if (!wasActive) renderConnections();
       })
     );
     row.insertCell().append(actions);
   }
 }
 
+function materialSymbol(name) {
+  const icon = document.createElement('span');
+  icon.className = 'material-symbols-rounded';
+  icon.setAttribute('aria-hidden', 'true');
+  icon.textContent = name;
+  return icon;
+}
+
+function saveConnections(active, urls, reloadPage = true) {
+  servers = [...new Set(urls)];
+  localStorage.setItem('devops-connections', JSON.stringify({ active, urls: servers }));
+  if (reloadPage) location.reload();
+}
+
 function connectionAction(label, url, action) {
   const button = document.createElement('button');
   button.type = 'button';
-  button.textContent = label;
+  button.className = 'connection-action';
   button.setAttribute('aria-label', label + ' ' + url);
+  button.title = label + ' ' + url;
+  button.append(materialSymbol(label === 'Edit' ? 'edit' : 'delete'));
   button.addEventListener('click', action);
   return button;
 }
@@ -94,6 +122,10 @@ function connectionAction(label, url, action) {
 function setConnectionEditor(mode, url = null) {
   editingServer = url;
   newServer.hidden = !mode;
+  connectionsGrid.hidden = Boolean(mode);
+  settingsActions.hidden = !mode;
+  addServer.hidden = Boolean(mode);
+  connectionsLabel.textContent = mode === 'add' ? 'Add server URL' : mode === 'edit' ? 'Edit server URL' : 'Saved server URLs';
   serverInput.disabled = !mode;
   serverInput.required = Boolean(mode);
   serverInput.value = url || '';
@@ -109,9 +141,15 @@ settingsButton.addEventListener('click', () => {
   settings.showModal();
 });
 addServer.addEventListener('click', () => setConnectionEditor('add'));
-document.querySelector('#settings-cancel').addEventListener('click', () => settings.close());
+document.querySelector('#settings-close').addEventListener('click', () => settings.close());
+document.querySelector('#settings-cancel').addEventListener('click', () => {
+  setConnectionEditor(null);
+  renderConnections();
+  addServer.focus();
+});
 document.querySelector('#settings-form').addEventListener('submit', event => {
   event.preventDefault();
+  if (serverInput.disabled) return;
   let active = selectedServer;
   if (!serverInput.disabled) {
     let url;
@@ -138,8 +176,7 @@ document.querySelector('#settings-form').addEventListener('submit', event => {
       active ||= address;
     }
   }
-  localStorage.setItem('devops-connections', JSON.stringify({ active, urls: [...new Set(draftServers)] }));
-  location.reload();
+  saveConnections(active, draftServers);
 });
 
 const collator = new Intl.Collator('en', { sensitivity: 'base', numeric: true });
@@ -149,6 +186,7 @@ let collections = [];
 let projects = [];
 let partial = false;
 let loaded = false;
+let sourceTabId = null;
 
 advanced.addEventListener('click', () => {
   filters.hidden = !filters.hidden;
@@ -173,19 +211,19 @@ updateRepositories();
 load();
 
 async function load() {
-  connectedServer.hidden = true;
+  sourceTabId = null;
+  const hasServer = Boolean(server && server !== defaultServer);
+  connectedServer.textContent = hasServer
+    ? server.replace(/^https?:\/\//, '').replace(/\/+$/, '')
+    : 'No server selected';
+  connectedServer.title = hasServer ? server : 'No server selected';
+  connectedServer.hidden = false;
+  setConnectionStatus(hasServer ? 'checking' : 'unconfigured');
   errorBox.hidden = true;
   status.hidden = false;
   status.textContent = 'Loading projects and repositories…';
-  session.textContent = '';
-  session.dataset.state = 'checking';
-  session.setAttribute('aria-label', 'Checking session');
-  session.title = 'Checking session';
   try {
     if (!server || server === defaultServer) {
-      session.dataset.state = 'unavailable';
-      session.setAttribute('aria-label', 'Setup required');
-      session.title = 'Setup required';
       status.hidden = true;
       const heading = document.createElement('h2');
       heading.textContent = 'Setup required';
@@ -203,11 +241,16 @@ async function load() {
       return;
     }
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    sourceTabId = tab?.id ?? null;
     if (!tab?.id || !(tab.url === server || tab.url?.startsWith(server + '/'))) {
       throw new Error('Open the configured Azure DevOps site, sign in, then click the DevOps Finder toolbar icon.');
     }
     const result = await chrome.runtime.sendMessage({ type: 'searchdevops:load-inventory', sourceTabId: tab.id, serverUrl: server });
-    if (!result?.ok) throw new Error(result?.error || 'Could not retrieve data from Azure DevOps.');
+    if (!result?.ok) {
+      const requestError = new Error(result?.error || 'Could not retrieve data from Azure DevOps.');
+      requestError.requiresHostPermission = result?.requiresHostPermission === true;
+      throw requestError;
+    }
 
     const inventory = result.inventory;
     collections = [...inventory.collections].sort((a, b) => compare(a.name, b.name));
@@ -235,19 +278,11 @@ async function load() {
     setOptions(collection, 'All collections', collections.map(group => new Option(group.name, group.name)));
     updateProjects();
     updateRepositories();
-    session.textContent = '';
-    session.setAttribute('aria-label', 'Signed in');
-    session.title = 'Signed in';
-    session.dataset.state = 'active';
-    connectedServer.textContent = server.replace(/^https?:\/\//, '');
-    connectedServer.title = 'Connected to ' + server;
-    connectedServer.hidden = false;
+    setConnectionStatus('connected');
     loaded = true;
     render();
   } catch (error) {
-    session.dataset.state = 'unavailable';
-    session.setAttribute('aria-label', 'Session unavailable');
-    session.title = 'Session unavailable';
+    setConnectionStatus('failed');
     status.hidden = true;
     errorBox.hidden = false;
     const link = document.createElement('a');
@@ -257,8 +292,23 @@ async function load() {
     link.textContent = 'Open Azure DevOps';
     const retry = document.createElement('button');
     retry.type = 'button';
-    retry.textContent = 'Try again';
-    retry.addEventListener('click', load);
+    retry.textContent = error.requiresHostPermission ? 'Grant site access and retry' : 'Try again';
+    if (error.requiresHostPermission) {
+      retry.addEventListener('click', () => {
+        const originPattern = new URL(server).origin + '/*';
+        chrome.permissions.request({ origins: [originPattern] }).then(granted => {
+          if (granted) {
+            load();
+          } else {
+            message.textContent = 'Access to this Azure DevOps site was not granted. Allow access in the browser prompt, then try again.';
+          }
+        }).catch(() => {
+          message.textContent = 'Could not request access to this Azure DevOps site. Check the browser extension permissions and try again.';
+        });
+      });
+    } else {
+      retry.addEventListener('click', load);
+    }
     const heading = document.createElement('h2');
     heading.textContent = 'Session unavailable';
     const message = document.createElement('p');
@@ -268,6 +318,21 @@ async function load() {
     actions.append(link, retry);
     errorBox.replaceChildren(heading, message, actions);
   }
+}
+
+function setConnectionStatus(state) {
+  const labels = {
+    unconfigured: 'Not configured',
+    checking: 'Checking…',
+    connected: 'Connected',
+    failed: 'Failed'
+  };
+  const label = labels[state] || labels.failed;
+  const description = connectedServer.textContent + ': ' + label;
+  session.textContent = label;
+  session.dataset.state = state;
+  session.setAttribute('aria-label', description);
+  session.title = description;
 }
 
 function setOptions(select, label, options) {
@@ -399,21 +464,41 @@ function projectItem(item, visibleRepositories, expanded) {
 function navigationLink(url, name) {
   const link = document.createElement('a');
   link.className = 'open-icon navigation-link';
-  link.href = url;
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
+  bindSourceTabNavigation(link, url);
   link.setAttribute('aria-label', 'Open ' + name + ' in Azure DevOps');
   link.title = 'Open in Azure DevOps';
+  link.append(materialSymbol('open_in_new'));
   return link;
+}
+
+function bindSourceTabNavigation(link, url) {
+  link.href = url;
+  link.rel = 'noopener noreferrer';
+  link.addEventListener('click', event => {
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    if (sourceTabId === null) return;
+
+    let destination;
+    try {
+      destination = new URL(url);
+      if (destination.origin !== new URL(server).origin) {
+        console.error('Blocked a link outside the configured Azure DevOps server.');
+        return;
+      }
+    } catch (error) {
+      console.error(error);
+      return;
+    }
+    chrome.tabs.update(sourceTabId, { url: destination.href }).catch(console.error);
+  });
 }
 
 function resultItem(entry) {
   const item = document.createElement('li');
   const link = document.createElement('a');
   link.className = 'result';
-  link.href = entry.url;
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
+  bindSourceTabNavigation(link, entry.url);
 
   const isTfvc = entry.type === 'tfvc';
   const icon = document.createElement('i');
@@ -430,6 +515,7 @@ function resultItem(entry) {
   const open = document.createElement('span');
   open.className = 'open-icon';
   open.setAttribute('aria-hidden', 'true');
+  open.append(materialSymbol('open_in_new'));
   link.append(icon, text, open);
   item.append(link);
   return item;

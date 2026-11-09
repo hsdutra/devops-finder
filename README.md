@@ -23,6 +23,8 @@ If your team uses Azure DevOps to organize projects and store code, DevOps Finde
 3. Type a name to search, or use **Advanced search** to narrow the list.
 4. Select a result to open it in Azure DevOps.
 
+If the browser asks for permission to access your Azure DevOps site, allow it so the extension can search that site.
+
 An organization address often looks like `https://dev.azure.com/your-organization`. Your team may use a different address.
 
 ## Your data and privacy
@@ -40,3 +42,5 @@ Make sure you are signed in to the right Azure DevOps site and that the correct 
 ## License
 
 The extension's source code does not currently have a stated license. `bowtie-license.txt` applies separately and does not cover the whole project.
+
+The Material Symbols Rounded icon subset from Google Fonts is licensed under Apache 2.0; see [the included license](licenses/material-symbols-LICENSE.txt).
