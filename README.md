@@ -1,6 +1,6 @@
 # DevOps Finder
 
-> **Chrome Web Store:** [Replace this placeholder with the published listing](https://chromewebstore.google.com/detail/REPLACE_WITH_EXTENSION_ID)
+> **Chrome Web Store:** [Get DevOps Finder](https://chromewebstore.google.com/detail/devops-finder/kamjnpidcplakhdpilnemkiepeeljjjp)
 
 If your team uses Azure DevOps to organize projects and store code, DevOps Finder helps you quickly find the right project or code repository and open it. A repository is simply a place where a team keeps its code.
 
