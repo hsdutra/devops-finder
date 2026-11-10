@@ -105,6 +105,8 @@ button {
 #advanced .material-symbols-rounded { font-size: 18px; }
 #advanced[aria-expanded="true"] .material-symbols-rounded { transform: rotate(180deg); }
 #filters { display: grid; gap: 8px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+#filters .clear-filters { justify-self: end; margin: 0; padding: 5px 8px; border-radius: 6px; }
+#filters .clear-filters:hover { background: var(--hover); }
 label { display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: center; gap: 8px; }
 #status { margin: 10px 0 4px; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 #error {

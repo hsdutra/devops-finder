@@ -26,6 +26,7 @@ const project = document.querySelector('#project');
 const repository = document.querySelector('#repository');
 const advanced = document.querySelector('#advanced');
 const filters = document.querySelector('#filters');
+const clearFilters = document.querySelector('#clear-filters');
 const results = document.querySelector('#results');
 const status = document.querySelector('#status');
 const session = document.querySelector('#session');
@@ -204,6 +205,16 @@ project.addEventListener('change', () => {
   render();
 });
 repository.addEventListener('change', render);
+clearFilters.addEventListener('click', () => {
+  search.value = '';
+  collection.value = '';
+  project.value = '';
+  repository.value = '';
+  updateProjects();
+  updateRepositories();
+  render();
+  search.focus();
+});
 
 setOptions(collection, 'All collections', []);
 updateProjects();
